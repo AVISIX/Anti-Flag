@@ -247,10 +247,9 @@ namespace AntiFlagV2
 
                 return result;
             }
-            catch
-            {
-                return 0;
-            }
+            catch { }
+
+            return 0;
         }
 
 #pragma warning disable CA1416
@@ -331,21 +330,23 @@ namespace AntiFlagV2
         private static int PatchFolders()
         {
             int result = 0;
+
             foreach (string folder in Folders)
-            {
                 result += ClearDirectory(folder);
-            }
+
             return result;
         }
 
         private static int PatchRegistry()
         {
             int result = 0;
+
             foreach(RegistryKey key in RegistryKeys)
             {
                 ClearRegistryKey(key);
                 result++;
             }
+
             return result;
         }
 
@@ -536,8 +537,8 @@ namespace AntiFlagV2
 
             if (Console.ReadLine().Replace(" ", "").StartsWith("y"))
             {
-                Console.WriteLine("\nRestarting PC in 5 seconds.");
-                Process.Start("shutdown", "/r /t 5").WaitForExit();
+                Console.WriteLine("\nRestarting PC in 10 seconds.");
+                Process.Start("shutdown", "/r /t 10").WaitForExit();
             }
 
             Console.ForegroundColor = ConsoleColor.White;
@@ -546,9 +547,14 @@ namespace AntiFlagV2
 
 
 #pragma warning disable CS1998
-        private static async Task Execute()
+        private static async Task Execute(string ProductKey = null)
 #pragma warning restore CS1998
         {
+#if !_WINDOWS
+            Console.WriteLine("This Application is only valid on Windows.");
+            return;
+#endif 
+
             Watermark();
             AntiFlag();
 
@@ -562,7 +568,7 @@ namespace AntiFlagV2
 
             Console.WriteLine("Enter your Product Key:");
 
-            if (await CheckKey(Console.ReadLine().Replace(" ", "")) == false)
+            if (await CheckKey((ProductKey ?? Console.ReadLine()).Replace(" ", "")) == false)
             {
                 Console.WriteLine();
                 goto reattempt;
@@ -576,7 +582,7 @@ namespace AntiFlagV2
 
             Kill("Battle.Net");
             Kill("Overwatch");
-#if RELAESE
+#if RELEASE
             Kill("Brave");
             Kill("Chrome");
             Kill("Opera");
@@ -595,6 +601,6 @@ namespace AntiFlagV2
             End();
         }
 
-        private static void Main(string[] args) => Execute().Wait();
+        private static void Main(string[] args) => Execute(args[0]).Wait();
     }
 }
