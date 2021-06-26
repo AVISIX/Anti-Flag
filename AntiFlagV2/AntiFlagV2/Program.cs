@@ -9,12 +9,15 @@ using System.Linq;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.IO;
+using System.Reflection;
 
 namespace AntiFlagV2
 {
     class Program
     {
-        #region Config 
+        private static string CurDir { get; } = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+#region Config 
         private static string AppData { get; }         = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         private static string Roaming { get; }         = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         private static string Documents { get; }       = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -84,11 +87,69 @@ namespace AntiFlagV2
             Registry.ClassesRoot.OpenSubKey(@"VirtualStore\MACHINE\SOFTWARE\WOW6432Node\Activision", true),
             Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Classes\VirtualStore\MACHINE\SOFTWARE\WOW6432Node\Activision", true)
         };
-#pragma warning restore CA1416 
-        #endregion
+#pragma warning restore CA1416
+#endregion
 
 
-        #region Helpers 
+
+#region Helpers 
+        private static void ReportException(Exception e)
+        {
+#if DEBUG
+            Console.WriteLine(e);
+#endif 
+        }
+
+        public static string RandomString(int length, string pool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+        {
+            return new string(Enumerable.Repeat(pool, length).Select(s => s[new Random().Next(s.Length)]).ToArray());
+        }
+
+        private static bool SendCommand(string command, string args)
+        {
+            try
+            {
+                ProcessStartInfo si = new ProcessStartInfo();
+                si.FileName = command;
+                si.Arguments = args;
+                si.RedirectStandardError = true;
+                si.RedirectStandardOutput = true;
+                si.CreateNoWindow = true;
+
+                Process temp = new Process();
+                temp.StartInfo = si;
+                temp.EnableRaisingEvents = true;
+                temp.Start();
+
+                return true;
+            }
+            catch(Exception e)
+            {
+                ReportException(e);
+            }
+
+            return false;
+        }
+
+        private static void RestartExplorer()
+        {
+            foreach (Process p in Process.GetProcesses())
+            {
+                try
+                {
+                    if (p.MainModule.FileName.ToLower().EndsWith(":\\windows\\explorer.exe"))
+                    {
+                        p.Kill();
+                        break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    ReportException(e);
+                }
+            }
+        }
+
         enum RecycleFlags : uint
         {
             SHRB_NOCONFIRMATION = 0x00000001,
@@ -105,7 +166,10 @@ namespace AntiFlagV2
             {
                 uint IsSuccess = SHEmptyRecycleBin(IntPtr.Zero, null, RecycleFlags.SHRB_NOCONFIRMATION | RecycleFlags.SHRB_NOPROGRESSUI | RecycleFlags.SHRB_NOSOUND);
             }
-            catch { }
+            catch (Exception e)
+            {
+                ReportException(e);
+            }
         }
 
         private static bool Kill(string processName)
@@ -124,23 +188,26 @@ namespace AntiFlagV2
                     try
                     {
                         p.Kill();
-
-                        Thread.Sleep(100);
+                        p.WaitForExit();
 
                         if (p == null || p.HasExited || p.Handle == IntPtr.Zero)
                         {
                             Console.WriteLine($"> Killed: {p.ProcessName} [{p.Id}]");
-                            Thread.Sleep(250);
                             break;
                         }
+                        else
+                            Thread.Sleep(250);
 
-                        if(++attempts > 10)
+                        if (++attempts > 10)
                         {
                             Console.WriteLine($"> Failed to Kill: {p.ProcessName} [{p.Id}]");
                             break;
                         }
                     }
-                    catch { }
+                    catch(Exception e)
+                    {
+                        ReportException(e);
+                    }
                 }
             }
 
@@ -186,7 +253,7 @@ namespace AntiFlagV2
             }
         }
 
-#pragma warning disable CA1416 
+#pragma warning disable CA1416
         private static void ClearRegistryKey(RegistryKey key)
         {
             if (key != null)
@@ -204,12 +271,43 @@ namespace AntiFlagV2
                 catch { }
             }
         }
-#pragma warning restore CA1416 
-        #endregion
+#pragma warning restore CA1416
+#endregion
 
 
 
-        #region Patching
+#region Spoofing
+        private static void PatchDeviceName()
+        {
+            SendCommand("wmic", $"computersystem where caption='%computername%' rename {RandomString(15)}");
+        }
+
+        private static void PatchVolumeIDs()
+        {
+            List<char> roots = new List<char>();
+
+            foreach (char c in "CDEFGHIJKLMNOPQRSTUVWXYZ")
+                if (Directory.Exists(c + @":\"))
+                    roots.Add(c);
+                
+            foreach(char c in roots)
+                SendCommand(CurDir + @"\Binaries\volumeid64.exe", $"{c}: {RandomString(4, "ABCDEF0123456789")}-{RandomString(4, "ABCDEF0123456789")}");
+        }
+
+        private static void SpoofAll()
+        {
+            Console.WriteLine("Spoofing...");
+
+            PatchDeviceName();
+            PatchVolumeIDs();
+
+            Console.WriteLine("Spoofing completed.\n");
+        }
+#endregion
+
+
+
+#region Patching
         private static int PatchFiles()
         {
             int result = 0;
@@ -297,7 +395,7 @@ namespace AntiFlagV2
         {
             int result = 0;
 
-            #region Clear Battle.Net Agents
+#region Clear Battle.Net Agents
             {
                 string latestAgent = "";
                 int highest = 0;
@@ -331,7 +429,7 @@ namespace AntiFlagV2
 
                 result += ClearDirectory(latestAgent + @"\Logs\");
             }
-            #endregion
+#endregion
 
             return result;
         }
@@ -347,19 +445,19 @@ namespace AntiFlagV2
             total += PatchRegistry();
             total += PatchCustom();
 
-#if RELEASE 
+#if RELEASE
             PatchCookies();
-#endif 
+#endif
 
             Console.WriteLine($"Patched a total of {total} items.");
 
             Console.WriteLine();
         }
-        #endregion
+#endregion
 
 
 
-        #region Drawing
+#region Drawing
         private static void Watermark()
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
@@ -444,17 +542,19 @@ namespace AntiFlagV2
 
             Console.ForegroundColor = ConsoleColor.White;
         }
-        #endregion
+#endregion
 
 
 #pragma warning disable CS1998
         private static async Task Execute()
-#pragma warning restore CS1998 
+#pragma warning restore CS1998
         {
             Watermark();
             AntiFlag();
 
-            #region Ask for Key
+            //return;
+
+#region Ask for Key
 #if RELEASE
             WarnUser();
 
@@ -468,9 +568,9 @@ namespace AntiFlagV2
                 goto reattempt;
             }
 #endif
-            #endregion
+#endregion
 
-            #region Kill Instances
+#region Kill Instances
 
             Console.WriteLine("\nKilling Instances...");
 
@@ -482,10 +582,13 @@ namespace AntiFlagV2
             Kill("Opera");
             Kill("Firefox");
             Kill("msedge");
-#endif 
-            #endregion
+#endif
+#endregion
 
             PatchAll();
+            SpoofAll();
+
+            RestartExplorer();
 
             ClearBin();
 
