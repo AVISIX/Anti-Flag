@@ -26,7 +26,7 @@ namespace AntiFlagV2
         private static string ProgramFilesX86 { get; } = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
 
 
-        private static List<string> Files = new List<string>()
+        private static readonly List<string> Files = new()
         {
             ProgramFilesX86 + @"\Overwatch\.patch.result",
             ProgramFilesX86 + @"\Overwatch\.product.db",
@@ -51,7 +51,7 @@ namespace AntiFlagV2
             ProgramData + @"\Battle.net\Agent\product.db"
         };
 
-        private static List<string> Folders = new List<string>()
+        private static readonly List<string> Folders = new()
         {
             AppDataLocal + @"\Blizzard\",
 
@@ -74,7 +74,7 @@ namespace AntiFlagV2
         };
 
 #pragma warning disable CA1416 
-        private static List<RegistryKey> RegistryKeys = new List<RegistryKey>()
+        private static readonly List<RegistryKey> RegistryKeys = new()
         {
             Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Overwatch", true),
             Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Battle.net", true),
@@ -109,14 +109,14 @@ namespace AntiFlagV2
         {
             try
             {
-                ProcessStartInfo si = new ProcessStartInfo();
+                ProcessStartInfo si = new();
                 si.FileName = command;
                 si.Arguments = args;
                 si.RedirectStandardError = true;
                 si.RedirectStandardOutput = true;
                 si.CreateNoWindow = true;
 
-                Process temp = new Process();
+                Process temp = new();
                 temp.StartInfo = si;
                 temp.EnableRaisingEvents = true;
                 temp.Start();
@@ -176,7 +176,7 @@ namespace AntiFlagV2
         {
             Process[] procs = Process.GetProcessesByName(processName);
 
-            if (procs.Count() == 0)
+            if (procs.Length == 0)
                 return false;
 
             foreach (Process p in procs)
@@ -225,7 +225,7 @@ namespace AntiFlagV2
 
                 string[] files = Directory.GetFiles(folder);
 
-                result += files.Count();
+                result += files.Length;
 
                 foreach (string f in files)
                 {
@@ -283,7 +283,7 @@ namespace AntiFlagV2
 
         private static void PatchVolumeIDs()
         {
-            List<char> roots = new List<char>();
+            List<char> roots = new();
 
             foreach (char c in "CDEFGHIJKLMNOPQRSTUVWXYZ")
                 if (Directory.Exists(c + @":\"))
@@ -489,11 +489,12 @@ namespace AntiFlagV2
             Console.ForegroundColor = ConsoleColor.White;
         }
 
+#if RELEASE
         private static async Task<bool> CheckKey(string key)
         {
             try
             {
-                Console.WriteLine("\nChecking Key...");
+                Console.WriteLine("Checking Key...");
                 await SXA.AuthKey(5, key);
                 return true;
             }
@@ -518,6 +519,7 @@ namespace AntiFlagV2
      
             Console.ForegroundColor = ConsoleColor.White;
         }
+#endif 
 
         private static void End()
         {
@@ -553,25 +555,41 @@ namespace AntiFlagV2
 #if !_WINDOWS
             Console.WriteLine("This Application is only valid on Windows.");
             return;
-#endif 
+#endif
+            if (ProductKey == null)
+            {
+                Watermark();
+                AntiFlag();
+            }
 
-            Watermark();
-            AntiFlag();
-
-            //return;
-
-#region Ask for Key
+            #region Ask for Key
 #if RELEASE
-            WarnUser();
+            if (ProductKey == null)
+            {
+                WarnUser();
+                Console.WriteLine("Enter your Product Key:");
+            }
 
             reattempt:
 
-            Console.WriteLine("Enter your Product Key:");
-
-            if (await CheckKey((ProductKey ?? Console.ReadLine()).Replace(" ", "")) == false)
             {
-                Console.WriteLine();
-                goto reattempt;
+                string key = (ProductKey ?? Console.ReadLine()).Replace(" ", "");
+
+                if (ProductKey == null)
+                    Console.WriteLine();
+
+                if (await CheckKey(key) == false)
+                {
+                    Console.WriteLine();
+                    if (ProductKey == null)
+                        goto reattempt;
+                    else
+                    {
+                        Console.Read();
+                        Thread.Sleep(1500);
+                        return;
+                    }
+                }
             }
 #endif
 #endregion
@@ -601,6 +619,6 @@ namespace AntiFlagV2
             End();
         }
 
-        private static void Main(string[] args) => Execute(args[0]).Wait();
+        private static void Main(string[] args) => Execute(args.Length >= 1 ? args[0] : null).Wait();
     }
 }
