@@ -565,12 +565,12 @@ namespace AntiFlagV2
             #region Ask for Key
 #if RELEASE
             if (ProductKey == null)
-            {
                 WarnUser();
-                Console.WriteLine("Enter your Product Key:");
-            }
-
+            
             reattempt:
+
+            if(ProductKey == null)
+                Console.WriteLine("Enter your Product Key:");
 
             {
                 string key = (ProductKey ?? Console.ReadLine()).Replace(" ", "");
