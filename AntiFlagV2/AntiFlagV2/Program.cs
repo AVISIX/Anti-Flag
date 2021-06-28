@@ -16,8 +16,9 @@ namespace AntiFlagV2
     class Program
     {
         private static string CurDir { get; } = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        private static string ExeFileLocation { get => Process.GetCurrentProcess().MainModule.FileName; }
 
-#region Config 
+        #region Config 
         private static string AppData { get; }         = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         private static string Roaming { get; }         = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         private static string Documents { get; }       = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -88,16 +89,80 @@ namespace AntiFlagV2
             Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Classes\VirtualStore\MACHINE\SOFTWARE\WOW6432Node\Activision", true)
         };
 #pragma warning restore CA1416
-#endregion
+        #endregion
 
 
 
 #region Helpers 
+        private static void DeleteSelf(int seconds)
+        {
+            try
+            {
+                string batchPath = Path.GetTempPath() + @"\clear.bat";
+
+                File.Create(batchPath).Close();
+                File.WriteAllText(batchPath, $"timeout /t {seconds} > nul\ndel {ExeFileLocation}\n@RD /S /Q {Path.GetTempPath() + @".net\"}");
+
+                ProcessStartInfo si = new();
+                si.FileName = batchPath;
+                si.RedirectStandardError = true;
+                si.CreateNoWindow = true;
+
+                Process p = new();
+                p.StartInfo = si;
+                p.Start();
+            }
+            catch { }
+        }
+
+        private static bool IsValidAntiFlag()
+        {
+            string fn = Path.GetFileName(ExeFileLocation);
+
+            if (fn == null)
+                return false;
+
+            if (fn.ToLower() != "antiflag.exe")
+                return false;
+
+            return true;
+        }
+
+
         private static void ReportException(Exception e)
         {
 #if DEBUG
             Console.WriteLine(e);
 #endif 
+        }
+
+        private static void SeekAndDestroy(string folder, string wildcard)
+        {
+            try
+            {
+                DirectoryInfo d = new DirectoryInfo(folder);
+
+                foreach (var file in d.GetFiles())
+                {
+                    try
+                    {
+                        if (file.Name.ToLower().EndsWith(".sln") || file.Name.ToLower().EndsWith(".csproj"))
+                            continue;
+
+                        if (file.Name.ToLower().Contains(wildcard))
+                        {
+                            file.Delete();
+                        }
+                    }
+                    catch { }
+                }
+
+                foreach (var f in d.GetDirectories())
+                {
+                    SeekAndDestroy(f.FullName, wildcard);
+                }
+            }
+            catch { }
         }
 
         public static string RandomString(int length, string pool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
@@ -326,7 +391,7 @@ namespace AntiFlagV2
 
             return result;
         }
-
+        //C:\Users\Lukas\AppData\Local\Temp\.net
         private static int PatchFolders()
         {
             int result = 0;
@@ -457,8 +522,7 @@ namespace AntiFlagV2
 #endregion
 
 
-
-#region Drawing
+        #region Drawing
         private static void Watermark()
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
@@ -490,13 +554,13 @@ namespace AntiFlagV2
         }
 
 #if RELEASE
-        private static async Task<bool> CheckKey(string key)
+        private static async Task<Tuple<bool,Key>> CheckKey(string key)
         {
             try
             {
                 Console.WriteLine("Checking Key...");
-                await SXA.AuthKey(5, key);
-                return true;
+                var resultKey = await SXA.AuthKey(5, key);
+                return new Tuple<bool, Key>(true, resultKey);
             }
             catch (Exception e)
             {
@@ -506,7 +570,7 @@ namespace AntiFlagV2
                     Console.WriteLine("Unknown Error.");
             }
 
-            return false;
+            return new Tuple<bool, Key>(false, null);
         }
 
         private static void WarnUser()
@@ -541,7 +605,7 @@ namespace AntiFlagV2
             {
                 Console.WriteLine("\nRestarting PC in 10 seconds.");
                 Process.Start("shutdown", "/r /t 10").WaitForExit();
-            }
+            } 
 
             Console.ForegroundColor = ConsoleColor.White;
         }
@@ -552,6 +616,13 @@ namespace AntiFlagV2
         private static async Task Execute(string ProductKey = null)
 #pragma warning restore CS1998
         {
+            if (IsValidAntiFlag() == false)
+            {
+                Console.WriteLine("This Copy of Anti-Flag is invalid.");
+                Console.Read();
+                return;
+            }
+
 #if !_WINDOWS
             Console.WriteLine("This Application is only valid on Windows.");
             return;
@@ -561,8 +632,14 @@ namespace AntiFlagV2
                 Watermark();
                 AntiFlag();
             }
+            //6:36
 
             #region Ask for Key
+            bool isSingleUse = false;
+
+            if(isSingleUse)
+                DeleteSelf(60);
+            
 #if RELEASE
             if (ProductKey == null)
                 WarnUser();
@@ -578,7 +655,9 @@ namespace AntiFlagV2
                 if (ProductKey == null)
                     Console.WriteLine();
 
-                if (await CheckKey(key) == false)
+                Tuple<bool, Key> result = await CheckKey(key);
+
+                if (result.Item1 == false)
                 {
                     Console.WriteLine();
                     if (ProductKey == null)
@@ -590,11 +669,13 @@ namespace AntiFlagV2
                         return;
                     }
                 }
+
+                isSingleUse = result.Item2.TimeRemaining == null;
             }
 #endif
-#endregion
+            #endregion
 
-#region Kill Instances
+            #region Kill Instances
 
             Console.WriteLine("\nKilling Instances...");
 
@@ -612,11 +693,22 @@ namespace AntiFlagV2
             PatchAll();
             SpoofAll();
 
-            RestartExplorer();
+            Console.WriteLine("Clearing Traces...");
+            SeekAndDestroy(KnownFolders.GetPath(KnownFolder.Desktop), "antiflag");
+            SeekAndDestroy(KnownFolders.GetPath(KnownFolder.Documents), "antiflag");
+            SeekAndDestroy(KnownFolders.GetPath(KnownFolder.Downloads), "antiflag");
+            SeekAndDestroy(CurDir, "antiflag");
+            SeekAndDestroy(Path.GetDirectoryName(ExeFileLocation), "antiflag");
+            Console.WriteLine("Completed.\n");
 
             ClearBin();
 
+            RestartExplorer();
+
             End();
+
+            if(isSingleUse)
+                DeleteSelf(3); // cant be less than 10 seconds, cuz pc might restart before 
         }
 
         private static void Main(string[] args) => Execute(args.Length >= 1 ? args[0] : null).Wait();

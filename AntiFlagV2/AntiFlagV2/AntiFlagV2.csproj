@@ -9,6 +9,7 @@
 	  <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
 	  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 	  <ApplicationManifest>app.manifest</ApplicationManifest>
+	  <AssemblyName>AntiFlag</AssemblyName>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
