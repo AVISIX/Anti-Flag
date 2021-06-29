@@ -18,7 +18,7 @@ namespace AntiFlagV2
         private static string CurDir { get; } = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         private static string ExeFileLocation { get => Process.GetCurrentProcess().MainModule.FileName; }
 
-        #region Config 
+#region Config 
         private static string AppData { get; }         = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         private static string Roaming { get; }         = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         private static string Documents { get; }       = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -391,7 +391,7 @@ namespace AntiFlagV2
 
             return result;
         }
-        //C:\Users\Lukas\AppData\Local\Temp\.net
+
         private static int PatchFolders()
         {
             int result = 0;
@@ -522,7 +522,8 @@ namespace AntiFlagV2
 #endregion
 
 
-        #region Drawing
+
+#region Drawing
         private static void Watermark()
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
@@ -632,7 +633,6 @@ namespace AntiFlagV2
                 Watermark();
                 AntiFlag();
             }
-            //6:36
 
             #region Ask for Key
             bool isSingleUse = false;
