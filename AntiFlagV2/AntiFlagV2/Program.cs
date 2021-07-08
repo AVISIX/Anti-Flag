@@ -617,6 +617,10 @@ namespace AntiFlagV2
         private static async Task Execute(string ProductKey = null)
 #pragma warning restore CS1998
         {
+#pragma warning disable CA1416 // Validate platform compatibility
+            new SXAntiDebug.AntiDebug().StartChecker();
+#pragma warning restore CA1416 // Validate platform compatibility
+
             if (IsValidAntiFlag() == false)
             {
                 Console.WriteLine("This Copy of Anti-Flag is invalid.");
