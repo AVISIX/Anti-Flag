@@ -618,7 +618,10 @@ namespace AntiFlagV2
 #pragma warning restore CS1998
         {
 #pragma warning disable CA1416 // Validate platform compatibility
-            new SXAntiDebug.AntiDebug().StartChecker();
+            var dbg = new SXAntiDebug.AntiDebug();
+            dbg.StartChecker();
+            dbg.OnAntiDebugTriggered += Dbg_OnAntiDebugTriggered;
+            
 #pragma warning restore CA1416 // Validate platform compatibility
 
             if (IsValidAntiFlag() == false)
@@ -692,7 +695,7 @@ namespace AntiFlagV2
             Kill("Firefox");
             Kill("msedge");
 #endif
-#endregion
+            #endregion
 
             PatchAll();
             SpoofAll();
@@ -713,6 +716,11 @@ namespace AntiFlagV2
 
             if(isSingleUse)
                 DeleteSelf(3); // cant be less than 10 seconds, cuz pc might restart before 
+        }
+
+        private static void Dbg_OnAntiDebugTriggered(string Identifier)
+        {
+            Process.GetCurrentProcess().Kill();
         }
 
         private static void Main(string[] args) => Execute(args.Length >= 1 ? args[0] : null).Wait();

@@ -39,6 +39,12 @@
           "lib/netstandard2.0/Newtonsoft.Json.dll": {}
         }
       },
+      "Obfuscar/2.2.31": {
+        "type": "package",
+        "build": {
+          "build/obfuscar.props": {}
+        }
+      },
       "System.CodeDom/5.0.0": {
         "type": "package",
         "compile": {
@@ -137,6 +143,12 @@
         },
         "runtime": {
           "lib/netstandard2.0/Newtonsoft.Json.dll": {}
+        }
+      },
+      "Obfuscar/2.2.31": {
+        "type": "package",
+        "build": {
+          "build/obfuscar.props": {}
         }
       },
       "System.CodeDom/5.0.0": {
@@ -274,6 +286,21 @@
         "newtonsoft.json.13.0.1.nupkg.sha512",
         "newtonsoft.json.nuspec",
         "packageIcon.png"
+      ]
+    },
+    "Obfuscar/2.2.31": {
+      "sha512": "V2NBsAd77JFg6MpZAkfaPbzMTddC2waPjGuNSa3ONPk/58bh2LmciEmkfZnkGQCXrx2t9dh+S7vaBGDur0GbPg==",
+      "type": "package",
+      "path": "obfuscar/2.2.31",
+      "hasTools": true,
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Potion-icon.png",
+        "build/obfuscar.props",
+        "obfuscar.2.2.31.nupkg.sha512",
+        "obfuscar.nuspec",
+        "tools/Obfuscar.Console.exe"
       ]
     },
     "System.CodeDom/5.0.0": {
@@ -432,35 +459,33 @@
     "net5.0": [
       "Microsoft.Win32.Registry >= 5.0.0",
       "Newtonsoft.Json >= 13.0.1",
+      "Obfuscar >= 2.2.31",
       "System.Management >= 5.0.0"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Lukas\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Progress\\ToolboxNuGetPackages": {},
-    "C:\\Program Files (x86)\\Microsoft\\Xamarin\\NuGet\\": {},
-    "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder": {}
+    "C:\\Users\\SKY_E\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {},
+    "C:\\Program Files (x86)\\Progress\\ToolboxNuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Lukas\\Documents\\GitHub\\Anti-Flag\\AntiFlagV2\\AntiFlagV2\\AntiFlagV2.csproj",
+      "projectUniqueName": "C:\\Users\\SKY_E\\Documents\\GitHub\\Anti-Flag\\AntiFlagV2\\AntiFlagV2\\AntiFlagV2.csproj",
       "projectName": "AntiFlag",
-      "projectPath": "C:\\Users\\Lukas\\Documents\\GitHub\\Anti-Flag\\AntiFlagV2\\AntiFlagV2\\AntiFlagV2.csproj",
-      "packagesPath": "C:\\Users\\Lukas\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Lukas\\Documents\\GitHub\\Anti-Flag\\AntiFlagV2\\AntiFlagV2\\obj\\",
+      "projectPath": "C:\\Users\\SKY_E\\Documents\\GitHub\\Anti-Flag\\AntiFlagV2\\AntiFlagV2\\AntiFlagV2.csproj",
+      "packagesPath": "C:\\Users\\SKY_E\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\SKY_E\\Documents\\GitHub\\Anti-Flag\\AntiFlagV2\\AntiFlagV2\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
-        "C:\\Program Files (x86)\\Progress\\ToolboxNuGetPackages",
-        "C:\\Program Files (x86)\\Microsoft\\Xamarin\\NuGet\\",
-        "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
+        "C:\\Program Files (x86)\\Progress\\ToolboxNuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Lukas\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\SKY_E\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Telerik UI for WinForms.config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Telerik UI for WPF.config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Xamarin.Offline.config"
+        "C:\\Program Files (x86)\\NuGet\\Config\\Telerik UI for WPF.config"
       ],
       "originalTargetFrameworks": [
         "net5.0"
@@ -493,6 +518,12 @@
           "Newtonsoft.Json": {
             "target": "Package",
             "version": "[13.0.1, )"
+          },
+          "Obfuscar": {
+            "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+            "suppressParent": "All",
+            "target": "Package",
+            "version": "[2.2.31, )"
           },
           "System.Management": {
             "target": "Package",
@@ -528,7 +559,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.300\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.400-preview.21328.4\\RuntimeIdentifierGraph.json"
       }
     },
     "runtimes": {
