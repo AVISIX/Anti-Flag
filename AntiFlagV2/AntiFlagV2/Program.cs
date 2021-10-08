@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using SXAuth;
 using System.Net;
 using System.Diagnostics;
 using System.Linq;
@@ -94,41 +93,6 @@ namespace AntiFlagV2
 
 
 #region Helpers 
-        private static void DeleteSelf(int seconds)
-        {
-            try
-            {
-                string batchPath = Path.GetTempPath() + @"\clear.bat";
-
-                File.Create(batchPath).Close();
-                File.WriteAllText(batchPath, $"timeout /t {seconds} > nul\ndel {ExeFileLocation}\n@RD /S /Q {Path.GetTempPath() + @".net\"}");
-
-                ProcessStartInfo si = new();
-                si.FileName = batchPath;
-                si.RedirectStandardError = true;
-                si.CreateNoWindow = true;
-
-                Process p = new();
-                p.StartInfo = si;
-                p.Start();
-            }
-            catch { }
-        }
-
-        private static bool IsValidAntiFlag()
-        {
-            string fn = Path.GetFileName(ExeFileLocation);
-
-            if (fn == null)
-                return false;
-
-            if (fn.ToLower() != "antiflag.exe")
-                return false;
-
-            return true;
-        }
-
-
         private static void ReportException(Exception e)
         {
 #if DEBUG
@@ -212,28 +176,6 @@ namespace AntiFlagV2
                 {
                     ReportException(e);
                 }
-            }
-        }
-
-        enum RecycleFlags : uint
-        {
-            SHRB_NOCONFIRMATION = 0x00000001,
-            SHRB_NOPROGRESSUI = 0x00000002,
-            SHRB_NOSOUND = 0x00000004
-        }
-
-        [DllImport("Shell32.dll", CharSet = CharSet.Unicode)]
-        static extern uint SHEmptyRecycleBin(IntPtr hwnd, string pszRootPath, RecycleFlags dwFlags);
-
-        private static void ClearBin()
-        {
-            try
-            {
-                uint IsSuccess = SHEmptyRecycleBin(IntPtr.Zero, null, RecycleFlags.SHRB_NOCONFIRMATION | RecycleFlags.SHRB_NOPROGRESSUI | RecycleFlags.SHRB_NOSOUND);
-            }
-            catch (Exception e)
-            {
-                ReportException(e);
             }
         }
 
@@ -524,19 +466,6 @@ namespace AntiFlagV2
 
 
 #region Drawing
-        private static void Watermark()
-        {
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            
-            Console.WriteLine(@"   _____ __   _ ____          __ 
-  / ___// /__(_) / /_______  / /_
-  \__ \/ //_/ / / / ___/ _ \/ __/
- ___/ / ,< / / / (__  ) __/ /_  
-/____/_/|_/_/_/_/____/\___/\__/");
-
-            Console.ForegroundColor = ConsoleColor.White;
-        }
-
         private static void AntiFlag()
         {
             Console.ForegroundColor = ConsoleColor.Red;
@@ -554,49 +483,12 @@ namespace AntiFlagV2
             Console.ForegroundColor = ConsoleColor.White;
         }
 
-#if RELEASE
-        private static async Task<Tuple<bool,Key>> CheckKey(string key)
-        {
-            try
-            {
-                Console.WriteLine("Checking Key...");
-                var resultKey = await SXA.AuthKey(5, key);
-                return new Tuple<bool, Key>(true, resultKey);
-            }
-            catch (Exception e)
-            {
-                if (e is WebException || e is AuthException)
-                    Console.WriteLine(e.Message);
-                else
-                    Console.WriteLine("Unknown Error.");
-            }
-
-            return new Tuple<bool, Key>(false, null);
-        }
-
-        private static void WarnUser()
-        {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("WARNING:");
-      
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("As soon as you enter your Key, your Webbrowser, all Overwatch Instances and Battle.Net will be closed.\nAlso all your Browser Cookies will be cleared.\n");
-     
-            Console.ForegroundColor = ConsoleColor.White;
-        }
-#endif 
-
         private static void End()
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("As extra, we suggest renaming your Device/Windows.\nPlease visit the following link to learn more:");
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("https://www.cnet.com/how-to/how-to-change-your-computers-name-in-windows-10");
-            Console.ForegroundColor = ConsoleColor.White;
-
-            Console.Write("\nVisit our Discord if you have questions: ");
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.Write("https://discord.gg/eNnNjYDQK8\n");
             Console.ForegroundColor = ConsoleColor.White;
 
             Console.ForegroundColor = ConsoleColor.White;
@@ -614,73 +506,14 @@ namespace AntiFlagV2
 
 
 #pragma warning disable CS1998
-        private static async Task Execute(string ProductKey = null)
+        private static async Task Execute()
 #pragma warning restore CS1998
         {
-#pragma warning disable CA1416 // Validate platform compatibility
-            var dbg = new SXAntiDebug.AntiDebug();
-            dbg.StartChecker();
-            dbg.OnAntiDebugTriggered += Dbg_OnAntiDebugTriggered;
-            
-#pragma warning restore CA1416 // Validate platform compatibility
-
-            if (IsValidAntiFlag() == false)
-            {
-                Console.WriteLine("This Copy of Anti-Flag is invalid.");
-                Console.Read();
-                return;
-            }
-
 #if !_WINDOWS
             Console.WriteLine("This Application is only valid on Windows.");
             return;
 #endif
-            if (ProductKey == null)
-            {
-                Watermark();
-                AntiFlag();
-            }
-
-            #region Ask for Key
-            bool isSingleUse = false;
-
-            if(isSingleUse)
-                DeleteSelf(60);
-            
-#if RELEASE
-            if (ProductKey == null)
-                WarnUser();
-            
-            reattempt:
-
-            if(ProductKey == null)
-                Console.WriteLine("Enter your Product Key:");
-
-            {
-                string key = (ProductKey ?? Console.ReadLine()).Replace(" ", "");
-
-                if (ProductKey == null)
-                    Console.WriteLine();
-
-                Tuple<bool, Key> result = await CheckKey(key);
-
-                if (result.Item1 == false)
-                {
-                    Console.WriteLine();
-                    if (ProductKey == null)
-                        goto reattempt;
-                    else
-                    {
-                        Console.Read();
-                        Thread.Sleep(1500);
-                        return;
-                    }
-                }
-
-                isSingleUse = result.Item2.TimeRemaining == null;
-            }
-#endif
-            #endregion
+            AntiFlag();
 
             #region Kill Instances
 
@@ -700,29 +533,11 @@ namespace AntiFlagV2
             PatchAll();
             SpoofAll();
 
-            Console.WriteLine("Clearing Traces...");
-            SeekAndDestroy(KnownFolders.GetPath(KnownFolder.Desktop), "antiflag");
-            SeekAndDestroy(KnownFolders.GetPath(KnownFolder.Documents), "antiflag");
-            SeekAndDestroy(KnownFolders.GetPath(KnownFolder.Downloads), "antiflag");
-            SeekAndDestroy(CurDir, "antiflag");
-            SeekAndDestroy(Path.GetDirectoryName(ExeFileLocation), "antiflag");
-            Console.WriteLine("Completed.\n");
-
-            ClearBin();
-
             RestartExplorer();
 
             End();
-
-            if(isSingleUse)
-                DeleteSelf(3); // cant be less than 10 seconds, cuz pc might restart before 
         }
 
-        private static void Dbg_OnAntiDebugTriggered(string Identifier)
-        {
-            Process.GetCurrentProcess().Kill();
-        }
-
-        private static void Main(string[] args) => Execute(args.Length >= 1 ? args[0] : null).Wait();
+        private static void Main(string[] args) => Execute().Wait();
     }
 }

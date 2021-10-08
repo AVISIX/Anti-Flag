@@ -27,15 +27,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="SXAntiDebug">
-      <HintPath>..\..\..\SXAntiDebug\SXAntiDebug\SXAntiDebug\bin\Release\net5.0-windows\SXAntiDebug.dll</HintPath>
-    </Reference>
-    <Reference Include="SXAuth">
-      <HintPath>..\..\..\SXAuth1.0\SXAuth\SXAuth\bin\Release\net5.0\SXAuth.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="Binaries\Volumeid64.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
